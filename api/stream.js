@@ -6,7 +6,6 @@ export default async function handler(req, res) {
     const response = await fetch(target);
     let m3u8 = await response.text();
 
-    // Rewrite TS segment links to proxy
     m3u8 = m3u8.replace(
       /(.*\.ts)/g,
       match => `/api/segment?u=${encodeURIComponent(match)}`
@@ -16,7 +15,7 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
 
     return res.status(200).send(m3u8);
-  } catch (err) {
-    return res.status(500).json({ error: "Failed to load stream" });
+  } catch (e) {
+    return res.status(500).json({ error: "stream error" });
   }
 }
