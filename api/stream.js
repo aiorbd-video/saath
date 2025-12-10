@@ -3,19 +3,23 @@ export default async function handler(req, res) {
     "https://cloudfrontnet.vercel.app/tplay/playout/209611/master.m3u8";
 
   try {
-    const response = await fetch(target);
-    let m3u8 = await response.text();
+    const r = await fetch(target);
+    let m3u8 = await r.text();
 
+    // absolute segment URL create
+    const base = target.replace("master.m3u8", "");
+
+    // rewrite TS segments to proxy route
     m3u8 = m3u8.replace(
       /(.*\.ts)/g,
-      match => `/api/segment?u=${encodeURIComponent(match)}`
+      seg => `/api/segment?u=${encodeURIComponent(base + seg)}`
     );
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
 
-    return res.status(200).send(m3u8);
+    res.status(200).send(m3u8);
   } catch (e) {
-    return res.status(500).json({ error: "stream error" });
+    res.status(500).send("m3u8 error");
   }
 }
