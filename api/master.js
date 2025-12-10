@@ -1,34 +1,37 @@
 export default async function handler(req, res) {
-  const target =
-    "https://cloudfrontnet.vercel.app/tplay/playout/209611/master.m3u8";
-
   try {
-    const response = await fetch(target);
+    const url = req.query.u
+      ? decodeURIComponent(req.query.u)
+      : "https://cloudfrontnet.vercel.app/tplay/playout/209611/master.m3u8";
+
+    const response = await fetch(url);
+    if (!response.ok) return res.status(502).send("Upstream Error");
+
     let text = await response.text();
 
-    const base = target.replace("master.m3u8", "");
+    const base = url.replace(/[^/]+$/, "");
 
-    const output = text.split("\n").map(line => {
-      line = line.trim();
-      if (!line || line.startsWith("#")) return line;
+    const lines = text.split("\n").map(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return line;
 
-      const abs = new URL(line, base).href;
+      const abs = new URL(trimmed, base).href;
 
       if (abs.endsWith(".m3u8")) {
         return `/api/master?u=${encodeURIComponent(abs)}`;
       }
-
       if (abs.endsWith(".ts")) {
         return `/api/segment?u=${encodeURIComponent(abs)}`;
       }
 
       return line;
-    }).join("\n");
+    });
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-    res.send(output);
+    return res.send(lines.join("\n"));
+
   } catch (err) {
-    res.status(500).send("Failed to load master playlist");
+    return res.status(500).send("Playlist Error");
   }
 }
