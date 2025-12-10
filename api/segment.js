@@ -1,15 +1,18 @@
 export default async function handler(req, res) {
-  const url = req.query.u;
-  if (!url) return res.status(400).send("Missing ts URL");
-
   try {
-    const stream = await fetch(url);
-    const buffer = await stream.arrayBuffer();
+    const url = decodeURIComponent(req.query.u);
+    if (!url) return res.status(400).send("Missing segment URL");
+
+    const r = await fetch(url);
+    if (!r.ok) return res.status(502).send("Segment Fetch Error");
+
+    const buffer = Buffer.from(await r.arrayBuffer());
 
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Content-Type", "video/mp2t");
-    res.send(Buffer.from(buffer));
-  } catch (err) {
-    res.status(500).send("Segment load failed");
+    return res.send(buffer);
+
+  } catch (e) {
+    return res.status(500).send("Segment Proxy Error");
   }
 }
